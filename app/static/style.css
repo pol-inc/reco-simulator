@@ -1,0 +1,274 @@
+:root {
+  --bg: #f2f5f8;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --text: #1f2a37;
+  --muted: #5f6f82;
+  --line: #d6dde6;
+  --accent: #0f766e;
+  --accent-soft: #dff5f2;
+  --error: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  color: var(--text);
+  background: linear-gradient(180deg, #eef3f8 0%, #f9fbfd 45%, #eef6f5 100%);
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.page-header p {
+  margin: 6px 0 18px;
+  color: var(--muted);
+}
+
+.status-message {
+  min-height: 22px;
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.status-message.is-error {
+  color: var(--error);
+}
+
+.step-section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.step-section h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+.is-hidden {
+  display: none;
+}
+
+.panel {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.field-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+input[type="text"] {
+  min-width: 300px;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+button {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  border-radius: 8px;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actions {
+  margin-top: 12px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  position: relative;
+  text-align: left;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.card.selectable {
+  cursor: pointer;
+  color: var(--text);
+  background: var(--surface);
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.card.selectable:hover {
+  transform: translateY(-2px);
+  border-color: #92a4b7;
+}
+
+.card.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.expand-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  padding: 0;
+  border: 1px solid #8aa3b8;
+  background: #fff;
+  color: #1b3b50;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.expand-icon:hover {
+  background: #ebf4fc;
+}
+
+.card-body h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.muted {
+  color: var(--muted);
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.score {
+  margin: 10px 0 8px;
+  font-weight: 700;
+}
+
+.selected-values p {
+  margin: 4px 0;
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+.columns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.checkbox-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 8px;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 20;
+}
+
+.modal.is-hidden {
+  display: none;
+}
+
+.modal-panel {
+  width: min(760px, 100%);
+  max-height: 78vh;
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  padding: 14px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.modal-close {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: #1f2a37;
+  border-color: #1f2a37;
+}
+
+.modal-content {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.modal-row {
+  margin: 0 0 8px;
+  word-break: break-word;
+  line-height: 1.45;
+}
+
+@media (max-width: 700px) {
+  .container {
+    padding: 18px 12px 28px;
+  }
+
+  input[type="text"] {
+    min-width: 100%;
+  }
+
+  .field-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}

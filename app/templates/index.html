@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reco Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body>
+    <main class="container">
+        <header class="page-header">
+            <h1>Reco Simulator</h1>
+            <p>学生/募集の推薦リスト簡易シミュレータ</p>
+        </header>
+
+        <p id="status-message" class="status-message" aria-live="polite"></p>
+
+        <section id="step-1" class="step-section">
+            <h2>1. 学生または募集の選択</h2>
+            <div class="panel">
+                <div class="field-row">
+                    <span>カテゴリ</span>
+                    <label><input type="radio" name="category" value="Student" checked> 学生</label>
+                    <label><input type="radio" name="category" value="Recruit"> 募集</label>
+                </div>
+                <div class="field-row">
+                    <label for="keyword-input">キーワード検索</label>
+                    <input id="keyword-input" type="text" placeholder="例: 化学, 電力, 開発">
+                    <button id="search-button" type="button">検索</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="step-2" class="step-section is-hidden">
+            <h2>2. 検索結果表示・選択</h2>
+            <div id="search-results" class="card-grid"></div>
+            <div class="actions">
+                <button id="go-step-3" type="button" disabled>このアイテムで類似度設定へ</button>
+            </div>
+        </section>
+
+        <section id="step-3" class="step-section is-hidden">
+            <h2>3. 類似度選択</h2>
+            <div class="panel">
+                <div class="field-row">
+                    <span>計算方式</span>
+                    <label><input type="radio" name="method" value="Sum" checked> Sum</label>
+                    <label><input type="radio" name="method" value="Min"> Min</label>
+                </div>
+                <div class="field-column">
+                    <span>比較カラム</span>
+                    <div id="columns-container" class="columns-grid"></div>
+                </div>
+            </div>
+            <div class="actions">
+                <button id="run-similarity" type="button">類似アイテムを表示</button>
+            </div>
+        </section>
+
+        <section id="step-4" class="step-section is-hidden">
+            <h2>4. 類似度上位アイテム</h2>
+            <div id="similarity-results" class="card-grid"></div>
+            <div class="actions">
+                <button id="restart-flow" type="button">最初からやり直す</button>
+            </div>
+        </section>
+
+        <div id="details-modal" class="modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
+            <div class="modal-panel">
+                <div class="modal-header">
+                    <h3 id="details-modal-title">詳細</h3>
+                    <button id="details-close" type="button" class="modal-close" aria-label="close">x</button>
+                </div>
+                <div id="details-content" class="modal-content"></div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
