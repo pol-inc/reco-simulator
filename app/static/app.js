@@ -3,8 +3,8 @@ const state = {
   keyword: "",
   searchItems: [],
   selectedItem: null,
-  method: "Sum",
-  selectedColumns: new Set(),
+  columnWeights: {},
+  rowNormalized: false,
   allColumns: []
 };
 
@@ -15,6 +15,8 @@ const elements = {
   searchResults: document.getElementById("search-results"),
   goStep3Button: document.getElementById("go-step-3"),
   columnsContainer: document.getElementById("columns-container"),
+  rowNormalized: document.getElementById("row-normalized"),
+  rowNormalizedLabel: document.getElementById("row-normalized-label"),
   runSimilarityButton: document.getElementById("run-similarity"),
   similarityResults: document.getElementById("similarity-results"),
   restartFlowButton: document.getElementById("restart-flow"),
@@ -33,6 +35,54 @@ function truncateText(value, maxLength = 50) {
     return text;
   }
   return `${text.slice(0, maxLength - 3)}...`;
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function appendHighlightedText(container, text, keyword) {
+  const rawText = String(text ?? "");
+  const query = String(keyword ?? "").trim();
+  if (!query) {
+    container.textContent = rawText;
+    return;
+  }
+
+  const pattern = new RegExp(`(${escapeRegExp(query)})`, "ig");
+  const parts = rawText.split(pattern);
+
+  parts.forEach((part) => {
+    if (!part) {
+      return;
+    }
+
+    if (part.toLowerCase() === query.toLowerCase()) {
+      const mark = document.createElement("mark");
+      mark.textContent = part;
+      container.appendChild(mark);
+      return;
+    }
+
+    container.appendChild(document.createTextNode(part));
+  });
+}
+
+function buildMatchedRows(item, keyword) {
+  const query = String(keyword ?? "").trim().toLowerCase();
+  if (!query) {
+    return [];
+  }
+
+  return Object.entries(item.data || {})
+    .filter(([, value]) => String(value ?? "").toLowerCase().includes(query))
+    .slice(0, 2);
+}
+
+function setRowNormalizedState(isEnabled) {
+  state.rowNormalized = Boolean(isEnabled);
+  elements.rowNormalized.checked = state.rowNormalized;
+  elements.rowNormalizedLabel.textContent = state.rowNormalized ? "オン" : "オフ";
 }
 
 function openDetailsModal(item) {
@@ -88,7 +138,8 @@ function showUntilStep(stepNumber) {
 function resetDownstreamState() {
   state.searchItems = [];
   state.selectedItem = null;
-  state.selectedColumns = new Set();
+  state.columnWeights = {};
+  setRowNormalizedState(false);
   elements.searchResults.innerHTML = "";
   elements.columnsContainer.innerHTML = "";
   elements.similarityResults.innerHTML = "";
@@ -109,43 +160,73 @@ async function fetchColumns() {
 function renderColumns() {
   elements.columnsContainer.innerHTML = "";
   state.allColumns.forEach((column) => {
-    const label = document.createElement("label");
-    label.className = "checkbox-item";
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.value = column;
-    checkbox.checked = state.selectedColumns.has(column);
-    checkbox.addEventListener("change", () => {
-      if (checkbox.checked) {
-        state.selectedColumns.add(column);
-      } else {
-        state.selectedColumns.delete(column);
-      }
-    });
+    const item = document.createElement("div");
+    item.className = "slider-item";
 
     const text = document.createElement("span");
+    text.className = "col-name";
     text.textContent = column;
 
-    label.appendChild(checkbox);
-    label.appendChild(text);
-    elements.columnsContainer.appendChild(label);
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.className = "weight-slider";
+    slider.min = "0";
+    slider.max = "10";
+    slider.step = "0.1";
+    slider.value = state.columnWeights[column] ?? 1;
+
+    const weightInput = document.createElement("input");
+    weightInput.type = "number";
+    weightInput.className = "weight-input";
+    weightInput.min = "0";
+    weightInput.max = "10";
+    weightInput.step = "0.1";
+    weightInput.value = state.columnWeights[column] ?? 1;
+    weightInput.title = `${column} の係数`;
+
+    const syncWeight = (nextValue) => {
+      const parsed = Number.parseFloat(nextValue);
+      const safeValue = Number.isFinite(parsed) ? Math.min(10, Math.max(0, parsed)) : 1;
+      state.columnWeights[column] = safeValue;
+      slider.value = String(safeValue);
+      weightInput.value = String(safeValue);
+    };
+
+    syncWeight(state.columnWeights[column] ?? 1);
+    slider.addEventListener("input", () => syncWeight(slider.value));
+    weightInput.addEventListener("input", () => syncWeight(weightInput.value));
+
+    item.appendChild(text);
+    item.appendChild(slider);
+    item.appendChild(weightInput);
+    elements.columnsContainer.appendChild(item);
   });
 }
 
-function cardBodyFromItem(item) {
+function cardBodyFromItem(item, options = {}) {
   const wrapper = document.createElement("div");
   wrapper.className = "card-body";
+  const keyword = options.keyword ?? "";
 
   const title = document.createElement("h3");
-  title.textContent = truncateText(item.primaryText || "(no title)");
+  appendHighlightedText(title, truncateText(item.primaryText || "(no title)"), keyword);
 
   const sub = document.createElement("p");
   sub.className = "muted";
-  sub.textContent = truncateText(`ID: ${item.secondaryText || item.id}`);
+  appendHighlightedText(sub, truncateText(`ID: ${item.secondaryText || item.id}`), keyword);
 
   wrapper.appendChild(title);
   wrapper.appendChild(sub);
+
+  if (options.includeMatches) {
+    buildMatchedRows(item, keyword).forEach(([key, value]) => {
+      const row = document.createElement("p");
+      row.className = "match-row";
+      appendHighlightedText(row, truncateText(`${key}: ${String(value)}`, 90), keyword);
+      wrapper.appendChild(row);
+    });
+  }
+
   return wrapper;
 }
 
@@ -168,7 +249,7 @@ function renderSearchResults() {
 
     card.appendChild(createExpandIcon(item));
 
-    card.appendChild(cardBodyFromItem(item));
+    card.appendChild(cardBodyFromItem(item, { keyword: state.keyword, includeMatches: true }));
 
     const selectItem = () => {
       state.selectedItem = item;
@@ -208,7 +289,7 @@ function renderSimilarityResults(items) {
 
     const score = document.createElement("p");
     score.className = "score";
-    score.textContent = truncateText(`類似スコア (${item.method}): ${item.score}`);
+    score.textContent = truncateText(`類似スコア: ${item.score}`);
     card.appendChild(score);
 
     const selectedValues = document.createElement("div");
@@ -263,8 +344,17 @@ async function onRunSimilarity() {
     return;
   }
 
-  const methodNode = document.querySelector("input[name='method']:checked");
-  state.method = methodNode ? methodNode.value : "Sum";
+  const selectedColumns = state.allColumns
+    .map((name) => ({
+      name,
+      weight: state.columnWeights[name] ?? 1
+    }))
+    .filter((item) => item.weight > 0);
+
+  if (selectedColumns.length === 0) {
+    setMessage("係数が 0 より大きいカラムを 1 つ以上指定してください。", true);
+    return;
+  }
 
   try {
     setMessage("類似度を計算中...", false);
@@ -275,8 +365,8 @@ async function onRunSimilarity() {
       },
       body: JSON.stringify({
         category: state.category,
-        method: state.method,
-        columns: Array.from(state.selectedColumns),
+        columns: selectedColumns,
+        rowNormalized: state.rowNormalized,
         selectedItemId: state.selectedItem.id
       })
     });
@@ -308,12 +398,6 @@ function bindEvents() {
     });
   });
 
-  document.querySelectorAll("input[name='method']").forEach((radio) => {
-    radio.addEventListener("change", (event) => {
-      state.method = event.target.value;
-    });
-  });
-
   elements.searchButton.addEventListener("click", onSearch);
   elements.keywordInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
@@ -321,9 +405,13 @@ function bindEvents() {
     }
   });
 
+  elements.rowNormalized.addEventListener("change", (event) => {
+    setRowNormalizedState(event.target.checked);
+  });
+
   elements.goStep3Button.addEventListener("click", () => {
     showUntilStep(3);
-    setMessage("計算方式と比較カラムを選択してください。", false);
+    setMessage("行正規化とカラム係数を調整してください。", false);
   });
 
   elements.runSimilarityButton.addEventListener("click", onRunSimilarity);

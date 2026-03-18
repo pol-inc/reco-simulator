@@ -26,7 +26,7 @@
                 </div>
                 <div class="field-row">
                     <label for="keyword-input">キーワード検索</label>
-                    <input id="keyword-input" type="text" placeholder="例: 化学, 電力, 開発">
+                    <input id="keyword-input" type="text" placeholder="1 単語のみ。例: 有機化学">
                     <button id="search-button" type="button">検索</button>
                 </div>
             </div>
@@ -44,12 +44,14 @@
             <h2>3. 類似度選択</h2>
             <div class="panel">
                 <div class="field-row">
-                    <span>計算方式</span>
-                    <label><input type="radio" name="method" value="Sum" checked> Sum</label>
-                    <label><input type="radio" name="method" value="Min"> Min</label>
+                    <span>行正規化</span>
+                    <label class="switch-row" for="row-normalized">
+                        <input id="row-normalized" type="checkbox">
+                        <span id="row-normalized-label">オフ</span>
+                    </label>
                 </div>
                 <div class="field-column">
-                    <span>比較カラム</span>
+                    <span>比較カラム係数（0 は無効）</span>
                     <div id="columns-container" class="columns-grid"></div>
                 </div>
             </div>

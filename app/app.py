@@ -51,9 +51,9 @@ def search():
 def similarity():
     payload = request.get_json(silent=True) or {}
     category = payload.get("category", "")
-    method = payload.get("method", "Sum")
     selected_columns = payload.get("columns", [])
     selected_item_id = payload.get("selectedItemId")
+    row_normalized = bool(payload.get("rowNormalized", False))
 
     if not isinstance(selected_columns, list):
         return jsonify({"error": "columns must be an array"}), 400
@@ -62,8 +62,8 @@ def similarity():
         items = get_similarity_dummy(
             category=category,
             selected_columns=selected_columns,
-            method=method,
             selected_item_id=selected_item_id,
+            row_normalized=row_normalized,
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
@@ -71,7 +71,7 @@ def similarity():
     return jsonify(
         {
             "category": category,
-            "method": method,
+            "rowNormalized": row_normalized,
             "count": len(items),
             "items": items,
         }
