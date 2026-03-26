@@ -1,12 +1,5 @@
 [
-  "recruit_name",
-  "company_name",
-  "research_fields",
-  "research_classifications",
   "work_detail",
   "want_experience",
-  "occupation",
-  "recruit_type_name",
-  "work_locations",
   "research_keywords"
 ]

@@ -1,10 +1,11 @@
 const state = {
   category: "Student",
   keyword: "",
+  searchTerms: [],
   searchItems: [],
   selectedItem: null,
   columnWeights: {},
-  rowNormalized: false,
+  rowNormalized: true,
   allColumns: []
 };
 
@@ -16,7 +17,6 @@ const elements = {
   goStep3Button: document.getElementById("go-step-3"),
   columnsContainer: document.getElementById("columns-container"),
   rowNormalized: document.getElementById("row-normalized"),
-  rowNormalizedLabel: document.getElementById("row-normalized-label"),
   runSimilarityButton: document.getElementById("run-similarity"),
   similarityResults: document.getElementById("similarity-results"),
   restartFlowButton: document.getElementById("restart-flow"),
@@ -41,15 +41,29 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function parseSearchTerms(value) {
+  return String(value ?? "")
+    .trim()
+    .split(/[\s\u3000]+/)
+    .filter(Boolean);
+}
+
 function appendHighlightedText(container, text, keyword) {
   const rawText = String(text ?? "");
-  const query = String(keyword ?? "").trim();
-  if (!query) {
+  const terms = parseSearchTerms(keyword);
+  if (terms.length === 0) {
     container.textContent = rawText;
     return;
   }
 
-  const pattern = new RegExp(`(${escapeRegExp(query)})`, "ig");
+  const uniqueTerms = [...new Set(terms.map((term) => term.toLowerCase()))];
+  const pattern = new RegExp(
+    `(${uniqueTerms
+      .sort((left, right) => right.length - left.length)
+      .map((term) => escapeRegExp(term))
+      .join("|")})`,
+    "ig"
+  );
   const parts = rawText.split(pattern);
 
   parts.forEach((part) => {
@@ -57,7 +71,7 @@ function appendHighlightedText(container, text, keyword) {
       return;
     }
 
-    if (part.toLowerCase() === query.toLowerCase()) {
+    if (uniqueTerms.includes(part.toLowerCase())) {
       const mark = document.createElement("mark");
       mark.textContent = part;
       container.appendChild(mark);
@@ -69,20 +83,22 @@ function appendHighlightedText(container, text, keyword) {
 }
 
 function buildMatchedRows(item, keyword) {
-  const query = String(keyword ?? "").trim().toLowerCase();
-  if (!query) {
+  const terms = parseSearchTerms(keyword).map((term) => term.toLowerCase());
+  if (terms.length === 0) {
     return [];
   }
 
   return Object.entries(item.data || {})
-    .filter(([, value]) => String(value ?? "").toLowerCase().includes(query))
+    .filter(([, value]) => {
+      const text = String(value ?? "").toLowerCase();
+      return terms.some((term) => text.includes(term));
+    })
     .slice(0, 2);
 }
 
 function setRowNormalizedState(isEnabled) {
   state.rowNormalized = Boolean(isEnabled);
   elements.rowNormalized.checked = state.rowNormalized;
-  elements.rowNormalizedLabel.textContent = state.rowNormalized ? "オン" : "オフ";
 }
 
 function openDetailsModal(item) {
@@ -139,7 +155,7 @@ function resetDownstreamState() {
   state.searchItems = [];
   state.selectedItem = null;
   state.columnWeights = {};
-  setRowNormalizedState(false);
+  setRowNormalizedState(true);
   elements.searchResults.innerHTML = "";
   elements.columnsContainer.innerHTML = "";
   elements.similarityResults.innerHTML = "";
@@ -159,40 +175,48 @@ async function fetchColumns() {
 
 function renderColumns() {
   elements.columnsContainer.innerHTML = "";
-  state.allColumns.forEach((column) => {
+  state.allColumns.forEach((columnDefinition) => {
+    const columnName = columnDefinition.name;
     const item = document.createElement("div");
     item.className = "slider-item";
 
     const text = document.createElement("span");
     text.className = "col-name";
-    text.textContent = column;
+    text.textContent = columnDefinition.label;
 
     const slider = document.createElement("input");
     slider.type = "range";
     slider.className = "weight-slider";
-    slider.min = "0";
-    slider.max = "10";
-    slider.step = "0.1";
-    slider.value = state.columnWeights[column] ?? 1;
+    slider.min = String(columnDefinition.min);
+    slider.max = String(columnDefinition.max);
+    slider.step = String(columnDefinition.step);
+    slider.value = String(
+      state.columnWeights[columnName] ?? columnDefinition.defaultWeight
+    );
 
     const weightInput = document.createElement("input");
     weightInput.type = "number";
     weightInput.className = "weight-input";
-    weightInput.min = "0";
-    weightInput.max = "10";
-    weightInput.step = "0.1";
-    weightInput.value = state.columnWeights[column] ?? 1;
-    weightInput.title = `${column} の係数`;
+    weightInput.min = String(columnDefinition.min);
+    weightInput.max = String(columnDefinition.max);
+    weightInput.step = String(columnDefinition.step);
+    weightInput.value = String(
+      state.columnWeights[columnName] ?? columnDefinition.defaultWeight
+    );
+    weightInput.title = `${columnDefinition.label} の係数`;
 
     const syncWeight = (nextValue) => {
       const parsed = Number.parseFloat(nextValue);
-      const safeValue = Number.isFinite(parsed) ? Math.min(10, Math.max(0, parsed)) : 1;
-      state.columnWeights[column] = safeValue;
+      const fallbackValue = Number(columnDefinition.defaultWeight);
+      const safeValue = Number.isFinite(parsed)
+        ? Math.min(columnDefinition.max, Math.max(columnDefinition.min, parsed))
+        : fallbackValue;
+      state.columnWeights[columnName] = safeValue;
       slider.value = String(safeValue);
       weightInput.value = String(safeValue);
     };
 
-    syncWeight(state.columnWeights[column] ?? 1);
+    syncWeight(state.columnWeights[columnName] ?? columnDefinition.defaultWeight);
     slider.addEventListener("input", () => syncWeight(slider.value));
     weightInput.addEventListener("input", () => syncWeight(weightInput.value));
 
@@ -316,6 +340,7 @@ function renderSimilarityResults(items) {
 
 async function onSearch() {
   state.keyword = elements.keywordInput.value.trim();
+  state.searchTerms = parseSearchTerms(state.keyword);
   state.selectedItem = null;
   elements.goStep3Button.disabled = true;
 
@@ -345,9 +370,10 @@ async function onRunSimilarity() {
   }
 
   const selectedColumns = state.allColumns
-    .map((name) => ({
-      name,
-      weight: state.columnWeights[name] ?? 1
+    .map((columnDefinition) => ({
+      name: columnDefinition.name,
+      weight:
+        state.columnWeights[columnDefinition.name] ?? columnDefinition.defaultWeight
     }))
     .filter((item) => item.weight > 0);
 

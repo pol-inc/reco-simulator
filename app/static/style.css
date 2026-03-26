@@ -203,7 +203,7 @@ mark {
 
 .columns-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -309,6 +309,10 @@ mark {
   }
 
   .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .columns-grid {
     grid-template-columns: 1fr;
   }
 }

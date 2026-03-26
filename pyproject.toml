@@ -1,7 +1,7 @@
 [project]
 name = "reco-simulator"
 version = "0.1.0"
-description = "Add your description here"
+description = "推薦システムシミュレーター"
 authors = [
     { name = "Hideaki Takahashi", email = "ivorypawn0@gmail.com" }
 ]
@@ -18,14 +18,14 @@ requires-python = ">= 3.11"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.rye]
-managed = true
-dev-dependencies = [
-    "jupyterlab>=4.5.5",
-]
-
 [tool.hatch.metadata]
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/reco_simulator"]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+    "jupyterlab>=4.5.6",
+]

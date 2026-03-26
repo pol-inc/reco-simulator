@@ -10,6 +10,15 @@ PASSWORD = os.getenv("ELASTICSEARCH_PASSWORD", "")
 
 # recruit_id と company_id は数値 ID なので類似度計算から除外する
 STOP_COLS_RECRUIT = {"recruit_id", "company_id"}
+PARTIAL_MATCH_COLS_RECRUIT = {
+    "recruit_name",
+    "company_name",
+    "research_fields",
+    "research_classifications",
+    "occupation",
+    "recruit_type_name",
+    "work_locations",
+}
 
 K = 50  # 各行で保持する上位件数
 
@@ -77,7 +86,7 @@ if __name__ == "__main__":
     df = pd.read_csv("data/recruit_info.csv")
     meta = []
     for col in df.columns:
-        if col in STOP_COLS_RECRUIT:
+        if col in STOP_COLS_RECRUIT or col in PARTIAL_MATCH_COLS_RECRUIT:
             continue
         scores(df, col, session, k=K)
         meta.append(col)

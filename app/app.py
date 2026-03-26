@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, render_template, request
 
 from app.get_dummy import get_columns, get_similarity_dummy, search_items
+from app.get_score import get_recruit_similarity
 
 app = Flask(__name__)
 
@@ -59,12 +60,19 @@ def similarity():
         return jsonify({"error": "columns must be an array"}), 400
 
     try:
-        items = get_similarity_dummy(
-            category=category,
-            selected_columns=selected_columns,
-            selected_item_id=selected_item_id,
-            row_normalized=row_normalized,
-        )
+        if category == "Recruit":
+            items = get_recruit_similarity(
+                selected_columns=selected_columns,
+                selected_item_id=selected_item_id,
+                row_normalized=row_normalized,
+            )
+        else:
+            items = get_similarity_dummy(
+                category=category,
+                selected_columns=selected_columns,
+                selected_item_id=selected_item_id,
+                row_normalized=row_normalized,
+            )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 
