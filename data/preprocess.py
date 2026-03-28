@@ -1,9 +1,66 @@
 import json
 import os
-from rank_bm25 import BM25Okapi
+
 import numpy as np
 import pandas as pd
 import requests
+from openai import OpenAI, OpenAIError
+from rank_bm25 import BM25Okapi
+from tqdm import tqdm
+
+api_key = os.environ.get("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key)
+
+
+def build_extract_text(row, columns):
+    return " ".join(str(row[col]) for col in columns if pd.notna(row[col])).strip()
+
+
+def count_extract_input_duplicates(df, columns):
+    texts = df.apply(lambda row: build_extract_text(row, columns), axis=1)
+    total = len(texts)
+    unique = texts.nunique(dropna=False)
+    duplicates = total - unique
+    duplicate_rate = duplicates / total if total else 0.0
+    print(
+        f"Extract input total={total}, unique={unique}, "
+        f"duplicates={duplicates}, duplicate_rate={duplicate_rate:.2%}"
+    )
+
+
+def extract(df, columns, model_name="gpt-5-nano"):
+    with open("data/prompt.md") as f:
+        prompt_template = f.read()
+    results = []
+    extracted_cache = {}
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="extract"):
+        existing_keywords = row.get("research_keywords")
+        if pd.notna(existing_keywords) and str(existing_keywords).strip():
+            results.append(existing_keywords)
+            continue
+
+        text = build_extract_text(row, columns)
+        if text in extracted_cache:
+            results.append(extracted_cache[text])
+            continue
+
+        query = prompt_template.format(text=text)
+        try:
+            response = client.responses.create(
+                model=model_name,
+                input=query,
+            )
+            extracted_text = response.output_text
+        except OpenAIError as e:
+            print("Error:", e)
+            print(text)
+            extracted_text = None
+
+        extracted_cache[text] = extracted_text
+        results.append(extracted_text)
+    df["research_keywords"] = results
+    return df
+
 
 ES = "http://localhost:9200"  # ElasticSearch をローカル起動しておく
 PASSWORD = os.getenv("ELASTICSEARCH_PASSWORD", "")
@@ -78,12 +135,11 @@ def scores(df, col, session, k=K):
     np.save(f"data/scores_{col}_indices.npy", top_indices)
     np.save(f"data/scores_{col}_scores.npy", top_scores_arr)
 
-
-if __name__ == "__main__":
+def run_mlt():
     session = requests.Session()
     session.auth = ("elastic", PASSWORD)
 
-    df = pd.read_csv("data/recruit_info.csv")
+    df = pd.read_csv("data/recruit_info.csv")    
     meta = []
     for col in df.columns:
         if col in STOP_COLS_RECRUIT or col in PARTIAL_MATCH_COLS_RECRUIT:
@@ -99,3 +155,12 @@ if __name__ == "__main__":
 
     print(f"Saved {len(meta)} column score files and metadata.")
 
+
+if __name__ == "__main__":
+    df = pd.read_csv("data/recruit_info.csv")
+    columns = ["work_detail", "want_experience"]
+
+    output_path = "data/recruit_info_extracted.csv"
+    df = extract(df, columns)
+    df.to_csv(output_path, index=False)
+    print(f"Saved {output_path}")

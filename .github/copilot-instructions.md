@@ -45,11 +45,4 @@
 
 ## TODO
 
-- [x] 1. で半角・全角空白区切りの複数キーワードによる AND 検索に対応
-- [x] 実スコア計算に関わる実装を get_dummy.py から get_score.py に移行
-- [x] 3. のスライダーのリストを二段組にする
-- [x] 3. で次の募集のカラムについて修正：'recruit_name', 'company_name', 'research_fields', 'research_classifications', 'occupation', 'recruit_type_name', 'work_locations'
-  - scores を使用せず、部分一致で 0/1 スコアを与える
-  - スライダーを 0.1 刻み 0-1 (default: 0.1) に変更
-  - ラベルに（部分一致）と追記
-  - 各値は","区切りで複数のカテゴリが格納されており、set の intersection が空でなければ一致するとみなす
+- [ ] 

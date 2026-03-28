@@ -27,7 +27,7 @@ def get_recruit_column_definitions(available_columns: list[str]) -> list[dict[st
 		definitions.append(
 			{
 				"name": column,
-				"label": f"{column}（部分一致）" if is_partial_match else column,
+				"label": f"{column}(*)" if is_partial_match else column,
 				"min": 0,
 				"max": 1 if is_partial_match else 10,
 				"step": 0.1,

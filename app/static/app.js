@@ -108,7 +108,7 @@ function openDetailsModal(item) {
   Object.entries(data).forEach(([key, value]) => {
     const row = document.createElement("p");
     row.className = "modal-row";
-    row.textContent = `${key}: ${String(value)}`;
+    appendHighlightedText(row, `${key}: ${String(value)}`, state.keyword);
     elements.detailsContent.appendChild(row);
   });
 
@@ -279,7 +279,7 @@ function renderSearchResults() {
       state.selectedItem = item;
       elements.goStep3Button.disabled = false;
       renderSearchResults();
-      setMessage("検索結果を1件選択しました。次へ進めます。", false);
+      setMessage("検索結果を 1 件選択しました。", false);
     };
 
     card.addEventListener("click", selectItem);
