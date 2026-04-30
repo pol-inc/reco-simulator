@@ -30,5 +30,5 @@ packages = ["src/reco_simulator"]
 [dependency-groups]
 dev = [
     "ipykernel>=7.2.0",
-    "jupyterlab>=4.5.6",
+    "jupyterlab>=4.5.7",
 ]
